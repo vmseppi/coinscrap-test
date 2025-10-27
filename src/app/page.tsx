@@ -1,6 +1,9 @@
+import { mockTransactions } from '@/data/mock-transactions';
 import TransactionsList from '@/components/TransactionsList';
 
-export default function Home() {
+export default async function Home() {
+  const transactions = await Promise.resolve(mockTransactions);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <main className="container mx-auto px-4 py-8">
@@ -12,8 +15,8 @@ export default function Home() {
             Filtra y ordena tus transacciones financieras
           </p>
         </div>
-        
-        <TransactionsList />
+
+        <TransactionsList initialTransactions={transactions} />
       </main>
     </div>
   );

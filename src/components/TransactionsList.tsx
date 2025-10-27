@@ -1,22 +1,22 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Transaction, TransactionFilters } from '@/types/transaction';
 
 interface TransactionsListProps {
   initialTransactions?: Transaction[];
 }
 
-export default function TransactionsList({ initialTransactions = [] }: TransactionsListProps) {
-  const [transactions, setTransactions] = useState<Transaction[]>(initialTransactions);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+export default function TransactionsList({ initialTransactions }: TransactionsListProps) {
   const [filters, setFilters] = useState<TransactionFilters>({
     query: '',
     category: '',
     sortBy: 'date',
     sortOrder: 'desc'
   });
+
+  // Usar datos del servidor (RSC) como fuente principal
+  const transactions = initialTransactions || [];
 
   const categories = useMemo(() => {
     const uniqueCategories = Array.from(
@@ -28,9 +28,11 @@ export default function TransactionsList({ initialTransactions = [] }: Transacti
   const filteredTransactions = useMemo(() => {
     let filtered = [...transactions];
 
+    // Aplicar filtros localmente
     if (filters.query) {
       filtered = filtered.filter(transaction =>
-        transaction.description.toLowerCase().includes(filters.query!.toLowerCase())
+        transaction.description.toLowerCase().includes(filters.query!.toLowerCase()) ||
+        transaction.category.toLowerCase().includes(filters.query!.toLowerCase())
       );
     }
 
@@ -40,6 +42,7 @@ export default function TransactionsList({ initialTransactions = [] }: Transacti
       );
     }
 
+    // Aplicar ordenación localmente
     filtered.sort((a, b) => {
       let aValue: string | number;
       let bValue: string | number;
@@ -53,48 +56,14 @@ export default function TransactionsList({ initialTransactions = [] }: Transacti
       }
 
       if (filters.sortOrder === 'asc') {
-        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+        return aValue > bValue ? 1 : -1;
       } else {
-        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+        return aValue < bValue ? 1 : -1;
       }
     });
 
     return filtered;
   }, [transactions, filters]);
-
-  const fetchTransactions = async () => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const params = new URLSearchParams();
-      if (filters.query) params.append('query', filters.query);
-      if (filters.category) params.append('category', filters.category);
-      if (filters.sortBy) params.append('sortBy', filters.sortBy);
-      if (filters.sortOrder) params.append('sortOrder', filters.sortOrder);
-
-      const response = await fetch(`/api/transactions?${params.toString()}`);
-      
-      if (!response.ok) {
-        throw new Error('Error al cargar las transacciones');
-      }
-
-      const data = await response.json();
-      setTransactions(data.transactions);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error desconocido');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (initialTransactions && initialTransactions.length > 0) {
-      setTransactions(initialTransactions);
-    } else if (initialTransactions === undefined) {
-      fetchTransactions();
-    }
-  }, []);
 
   const handleFilterChange = (newFilters: Partial<TransactionFilters>) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
@@ -103,36 +72,21 @@ export default function TransactionsList({ initialTransactions = [] }: Transacti
   const formatAmount = (amount: number) => {
     return new Intl.NumberFormat('es-ES', {
       style: 'currency',
-      currency: 'EUR'
+      currency: 'EUR',
+      minimumFractionDigits: 2,
     }).format(amount);
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-ES');
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-ES', {
+      day: 'numeric',
+      month: 'numeric',
+      year: 'numeric'
+    });
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center p-8" role="status" aria-live="polite">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <span className="sr-only">Cargando transacciones...</span>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="bg-red-50 border border-red-200 rounded-md p-4" role="alert">
-        <p className="text-red-800">Error: {error}</p>
-        <button 
-          onClick={fetchTransactions}
-          className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-        >
-          Reintentar
-        </button>
-      </div>
-    );
-  }
+  // Estados de carga y error
 
   return (
     <div className="space-y-6">
@@ -141,21 +95,20 @@ export default function TransactionsList({ initialTransactions = [] }: Transacti
         <h2 className="text-lg font-semibold mb-4">Filtros</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
-            <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="search">
               Buscar
             </label>
             <input
               id="search"
               type="text"
+              placeholder="Buscar transacciones..."
               value={filters.query}
               onChange={(e) => handleFilterChange({ query: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Buscar transacciones..."
             />
           </div>
-          
           <div>
-            <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="category">
               Categoría
             </label>
             <select
@@ -165,16 +118,15 @@ export default function TransactionsList({ initialTransactions = [] }: Transacti
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Todas las categorías</option>
-              {categories.map(category => (
+              {categories.map((category) => (
                 <option key={category} value={category}>
                   {category}
                 </option>
               ))}
             </select>
           </div>
-
           <div>
-            <label htmlFor="sortBy" className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="sortBy">
               Ordenar por
             </label>
             <select
@@ -187,9 +139,8 @@ export default function TransactionsList({ initialTransactions = [] }: Transacti
               <option value="amount">Importe</option>
             </select>
           </div>
-
           <div>
-            <label htmlFor="sortOrder" className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="sortOrder">
               Orden
             </label>
             <select
@@ -214,8 +165,11 @@ export default function TransactionsList({ initialTransactions = [] }: Transacti
         </div>
         
         {filteredTransactions.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
-            <p>No se encontraron transacciones</p>
+          <div className="flex justify-center items-center p-8">
+            <div className="text-center">
+              <div className="text-gray-500 mb-2">📄</div>
+              <p className="text-gray-600">No se encontraron transacciones</p>
+            </div>
           </div>
         ) : (
           <div className="divide-y divide-gray-200">
@@ -223,8 +177,8 @@ export default function TransactionsList({ initialTransactions = [] }: Transacti
               <div
                 key={transaction.id}
                 className="px-6 py-4 hover:bg-gray-50 focus-within:bg-gray-50"
-                tabIndex={0}
                 role="listitem"
+                tabIndex={0}
               >
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
@@ -233,7 +187,7 @@ export default function TransactionsList({ initialTransactions = [] }: Transacti
                         {transaction.description}
                       </h3>
                       {transaction.pending && (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                        <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
                           Pendiente
                         </span>
                       )}
