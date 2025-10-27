@@ -1,0 +1,37 @@
+Plantilla de Respuesta â€” Prueba Frontend (1h Â· Nivel Mid)
+
+Datos
+-----
+Nombre: _____Maria victoria martinez seppi_________________
+Fecha: _______________________
+OpciÃ³n prÃ¡ctica elegida: (A)
+
+1) Respuestas cortas (elige 2 de 4)
+-----------------------------------
+Pregunta seleccionada 1: ¿Qué es el "callback hell" y cómo lo evitarías hoy?
+Respuesta (5â€"8 lÃ­neas):
+El “callback hell” pasa cuando metes muchos callbacks dentro de otros, y el código se vuelve un lío difícil de leer. Hoy en día lo evito usando Promises o async/await, que hacen el código más limpio y fácil de entender. También se puede usar Promise.all() para correr tareas al mismo tiempo sin anidar todo. Así el código es más claro y menos confuso.
+
+Pregunta seleccionada 2: SSR vs CSR en Next.js para una lista filtrable: ¿qué elegirías y por qué?
+Respuesta (5â€"8 lÃ­neas):
+Usaría CSR (Client-Side Rendering) porque las listas filtrables no necesitan SEO y el usuario puede filtrar sin recargar la página. Es más rápido y da una mejor experiencia. Además, el servidor trabaja menos porque no tiene que renderizar cada cambio. SSR solo lo usaría si los filtros fueran parte del SEO o si los datos deben verse de inmediato al cargar.
+
+
+2) PrÃ¡ctico (A | B | C)
+-----------------------
+Enfoque elegido y por quÃ© (tradeâ€'offs: SSR/CSR, datos, simplicidad):
+Elegí usar RSC (React Server Components) para traer los datos iniciales y tener mejor carga y SEO, y Client Components para manejar los filtros en el navegador y que la app se sienta rápida. El punto en contra es que es un poco más complejo al inicio, pero mejora el rendimiento. Los datos se obtienen desde el servidor y luego se filtran en el cliente para que los cambios sean instantáneos. Para mantenerlo simple, usé useState en lugar de cosas más pesadas como Redux o TanStack Query.
+
+Decisiones clave (estado, estilos, accesibilidad, seguridad):
+Estado: useState local para filtros (evito Redux por simplicidad). Estilos: Tailwind CSS por rapidez de desarrollo. Accesibilidad: roles ARIA, labels asociados, navegación por teclado, contraste adecuado. Seguridad: evito dangerouslySetInnerHTML, sanitización implícita con React, validación en API route.
+
+Tests realizados (quÃ© cubren y por quÃ© aportan valor):
+Hice tests unitarios para probar el filtrado por texto, el estado vacío y que el componente se renderice bien. También hice tests de API usando datos falsos (mock) para revisar la estructura. Estos tests sirven para asegurar que lo más importante funcione, evitar errores cuando se cambia algo y dejar claro qué se espera del código. Uso act() para evitar los warnings de React Testing Library.
+
+Resultados y limitaciones (quÃ© falta y prÃ³ximos pasos):
+Resultados: implementación funcional con RSC, filtros interactivos, accesibilidad completa, tests pasando. Limitaciones: no hay paginación, filtros por rango de fechas, ni E2E tests. Próximos pasos: añadir paginación, i18n, gráficos, tests E2E con Playwright.
+
+
+3) Tiempo invertido (aprox.)
+----------------------------
+ImplementaciÃ³n: 45 min Â· Tests: 20 min Â· README: 10 min
