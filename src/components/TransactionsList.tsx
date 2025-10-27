@@ -89,7 +89,9 @@ export default function TransactionsList({ initialTransactions = [] }: Transacti
   };
 
   useEffect(() => {
-    if (initialTransactions.length === 0) {
+    if (initialTransactions && initialTransactions.length > 0) {
+      setTransactions(initialTransactions);
+    } else if (initialTransactions === undefined) {
       fetchTransactions();
     }
   }, []);
